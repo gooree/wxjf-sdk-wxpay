@@ -11,16 +11,16 @@ public class WxPayConfig {
 	/**
 	 * APP ID
 	 */
-	public static final String appId = "wx822d716e6bf69e3a";
+	public static final String appId = "";
 	
 	/**
 	 * APP密钥
 	 */
-	public static final String appSecret = "liuxiangchenxi123456789009876543";
+	public static final String appSecret = "";
 	
 	/**
 	 * 商户ID
 	 */
-	public static final String mchId = "1316065901";
+	public static final String mchId = "";
 	
 }
