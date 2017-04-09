@@ -23,4 +23,9 @@ public class WxPayConfig {
 	 */
 	public static final String mchId = "";
 	
+	/**
+	 * 商户API密钥
+	 */
+	public static final String apiSecret = "";
+	
 }

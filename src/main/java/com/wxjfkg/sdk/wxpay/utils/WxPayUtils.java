@@ -35,12 +35,14 @@ public class WxPayUtils {
 	 * @param appSecret
 	 * @return
 	 */
-	public static String sign(Map<String, ?> map, String appSecret) {
+	public static String sign(Map<String, String> map, String appSecret) {
 		Md5Signature signature = new Md5Signature(appSecret, DEFAULT_CHARSET);
         
         List<String> params = new ArrayList<String>();
-		for (Map.Entry<String, ?> item : map.entrySet()) {
-			params.add(item.getKey() + "=" + item.getValue() + "&");
+		for (Map.Entry<String, String> item : map.entrySet()) {
+			if(StringUtils.isNotBlank(item.getValue())) {
+				params.add(item.getKey() + "=" + item.getValue() + "&");
+			}
 		}
 		String [] arrayToSort = params.toArray(new String[params.size()]);
         Arrays.sort(arrayToSort, String.CASE_INSENSITIVE_ORDER);
@@ -68,7 +70,7 @@ public class WxPayUtils {
 			return true;
 		}
 		
-		Map<String, Object> map = getMapFromXML(xml);
+		Map<String, String> map = getMapFromXML(xml);
 		String sign = map.get("sign").toString();
 		if (StringUtils.isBlank(sign)) {
 			return false;
@@ -89,7 +91,7 @@ public class WxPayUtils {
 	 * @return
 	 * @throws Exception
 	 */
-    public static Map<String,Object> getMapFromXML(String xmlString) throws Exception {
+    public static Map<String, String> getMapFromXML(String xmlString) throws Exception {
         //这里用Dom的方式解析回包的最主要目的是防止API新增回包字段
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -104,7 +106,7 @@ public class WxPayUtils {
         //获取到document里面的全部结点
         NodeList allNodes = document.getFirstChild().getChildNodes();
         Node node;
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, String> map = new HashMap<String, String>();
         int i=0;
         while (i < allNodes.getLength()) {
             node = allNodes.item(i);

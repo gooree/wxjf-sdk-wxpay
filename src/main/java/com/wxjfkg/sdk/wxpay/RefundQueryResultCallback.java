@@ -14,7 +14,7 @@ public class RefundQueryResultCallback implements ResultCallback<RefundQueryResp
 	@Override
 	public void extract(String xml, RefundQueryResponse response)
 			throws WxPayApiException {
-		Map<String, Object> map;
+		Map<String, String> map;
 		try {
 			map = WxPayUtils.getMapFromXML(xml);
 			

@@ -1,13 +1,19 @@
 package com.wxjfkg.sdk.wxpay;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+
+import okhttp3.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.wxjfkg.sdk.http.HttpApiResponse;
 import com.wxjfkg.sdk.http.HttpException;
+import com.wxjfkg.sdk.http.HttpMethod;
 import com.wxjfkg.sdk.http.OkHttpTemplate;
+import com.wxjfkg.sdk.http.ResponseExtractor;
 import com.wxjfkg.sdk.wxpay.core.WxPayRequest;
 import com.wxjfkg.sdk.wxpay.core.WxPayResponse;
 import com.wxjfkg.sdk.wxpay.utils.CodecUtils;
@@ -22,6 +28,8 @@ public class WxPayClient {
 	
 	private String appSecret;
 	
+	private String apiSecret;
+	
 	private String mchId;
 	
 	private String deviceInfo = "WEB";
@@ -30,9 +38,10 @@ public class WxPayClient {
 	
 	private static final OkHttpTemplate template = new OkHttpTemplate();
 	
-	public WxPayClient(String appId, String appSecret, String mchId, String deviceInfo) {
+	public WxPayClient(String appId, String appSecret, String apiSecret, String mchId, String deviceInfo) {
 		this.appId = appId;
 		this.appSecret = appSecret;
+		this.apiSecret = apiSecret;
 		this.mchId = mchId;
 		this.deviceInfo = deviceInfo;
 	}
@@ -51,19 +60,66 @@ public class WxPayClient {
 		return executeWithCallback(request, entityClazz, null);
 	}
 	
+	/**
+	 * Execute with raw response content.
+	 * @param request
+	 * @return
+	 * @throws WxPayApiException
+	 */
 	public String execute(WxPayRequest request) throws WxPayApiException {
 		String result = null;
 		try {
-			request.setParameter("appid", this.appId);
-			request.setParameter("secret", this.appSecret);
-			request.setParameter("grant_type", "authorization_code");
-			
-			result = template.get(request.getUrl(), request.getParameterMap());
+			if(request.getMethod().equals(HttpMethod.GET.getMethod())) {
+				result = template.get(request.getUrl(), request.getParameterMap());
+			} else {
+				result = template.post(request.getUrl(), request.getParameterMap());
+			}
 			logger.debug("http response:{}", result);
 		} catch (HttpException ex) {
 			logger.error("http api execute failure.", ex);
 		}
 		return result;
+	}
+	
+	public InputStream executeWithRawStream(WxPayRequest request) throws WxPayApiException {
+		/*
+		 * 0.设置公共请求参数
+		 */
+		request.setParameter("appid", this.appId);
+		request.setParameter("mch_id", mchId);
+		request.setParameter("device_info", deviceInfo);
+		request.setParameter("nonce_str",
+				RandomUtils.getRandomStringByLength(32));
+
+		/*
+		 * 1.请求签名
+		 */
+		Map<String, String> parameters = request.getParameterMap();
+		String sign = WxPayUtils.sign(parameters, apiSecret);
+		parameters.put("sign", sign);
+
+		/*
+		 * 2.请求对象序列化
+		 */
+		String postEntity = CodecUtils.toXml(parameters, "xml");
+		logger.debug("http request:{}", postEntity);
+
+		try {
+			InputStream outStream = template.post(request.getUrl(),
+					OkHttpTemplate.XML, postEntity,
+					new ResponseExtractor<InputStream>() {
+						@Override
+						public InputStream extract(Response response)
+								throws IOException {
+							return response.body().byteStream();
+						}
+					});
+
+			return outStream;
+		} catch (HttpException ex) {
+			logger.error("http api execute failure.", ex);
+			throw new WxPayApiException(ex);
+		}
 	}
 	
 	/**
@@ -89,7 +145,7 @@ public class WxPayClient {
 		 * 1.请求签名
 		 */
 		Map<String, String> parameters = request.getParameterMap();
-		String sign = WxPayUtils.sign(parameters, appSecret);
+		String sign = WxPayUtils.sign(parameters, apiSecret);
 		parameters.put("sign", sign);
 		
 		/*
@@ -117,7 +173,7 @@ public class WxPayClient {
 		 * 4.响应报文验签
 		 */
 		try {
-			if (WxPayUtils.verifySign(result, appSecret)) {
+			if (WxPayUtils.verifySign(result, apiSecret)) {
 				/*
 				 * 4.1报文验签成功，反序列化响应报文
 				 */
@@ -155,6 +211,14 @@ public class WxPayClient {
 
 	public void setAppSecret(String appSecret) {
 		this.appSecret = appSecret;
+	}
+
+	public String getApiSecret() {
+		return apiSecret;
+	}
+
+	public void setApiSecret(String apiSecret) {
+		this.apiSecret = apiSecret;
 	}
 
 	public String getMchId() {

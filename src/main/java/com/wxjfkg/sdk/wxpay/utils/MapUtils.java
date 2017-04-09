@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class MapUtils {
 
-	public static String getStringFromMap(Map<String, Object> map, String key, String defaultValue) {
+	public static String getStringFromMap(Map<String, String> map, String key, String defaultValue) {
         if (key == "" || key == null) {
             return defaultValue;
         }
@@ -22,12 +22,12 @@ public class MapUtils {
         }
     }
 
-    public static int getIntFromMap(Map<String, Object> map, String key) {
+    public static Integer getIntFromMap(Map<String, String> map, String key) {
         if (key == "" || key == null) {
-            return 0;
+            return null;
         }
         if (map.get(key) == null) {
-            return 0;
+            return null;
         }
         return Integer.parseInt((String) map.get(key));
     }
